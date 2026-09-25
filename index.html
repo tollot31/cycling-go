@@ -7,7 +7,7 @@
     content="width=device-width, initial-scale=1.0, viewport-fit=cover"
   />
 
-  <title>Cycling Road — Motion Prototype 01.4</title>
+  <title>Cycling Road — Motion Prototype 01.5</title>
 
   <style>
     html,
@@ -33,15 +33,18 @@
       left: 50%;
       bottom: calc(18px + env(safe-area-inset-bottom));
       transform: translateX(-50%);
+
       font-family:
         -apple-system,
         BlinkMacSystemFont,
         "Helvetica Neue",
         Arial,
         sans-serif;
+
       font-size: 11px;
       letter-spacing: 0.14em;
       color: rgba(30, 40, 45, 0.45);
+
       pointer-events: none;
     }
   </style>
@@ -58,7 +61,7 @@
 
 <body>
 
-  <div id="label">MOTION PROTOTYPE 01.4</div>
+  <div id="label">MOTION PROTOTYPE 01.5</div>
 
   <script type="module">
 
@@ -85,8 +88,7 @@
     const camera =
       new THREE.PerspectiveCamera(
         52,
-        window.innerWidth /
-        window.innerHeight,
+        window.innerWidth / window.innerHeight,
         0.1,
         250
       );
@@ -151,53 +153,214 @@
 
 
     // ============================================================
-    // ROUTE
+    // HORIZONTAL ROUTE
+    //
+    // IMPORTANT:
+    //
+    // All control points have Y = 0.
+    //
+    // Catmull-Rom is now responsible ONLY for the shape of the road
+    // when seen from above.
+    //
+    // It cannot create hills or vertical oscillation.
     // ============================================================
 
-    const routePoints = [
+    const horizontalPoints = [
 
       new THREE.Vector3(
-         0, 18,   0
+         0, 0,   0
       ),
 
       new THREE.Vector3(
-        -2, 16, -12
+        -2, 0, -12
       ),
 
       new THREE.Vector3(
-        -7, 13, -25
+        -7, 0, -25
       ),
 
       new THREE.Vector3(
-        -5, 10, -39
+        -5, 0, -39
       ),
 
       new THREE.Vector3(
-         2,  7, -53
+         2, 0, -53
       ),
 
       new THREE.Vector3(
-         8,  4, -67
+         8, 0, -67
       ),
 
       new THREE.Vector3(
-         6,  2, -82
+         6, 0, -82
       ),
 
       new THREE.Vector3(
-         0,  0, -98
+         0, 0, -98
       )
 
     ];
 
 
-    const route =
+    const horizontalRoute =
       new THREE.CatmullRomCurve3(
-        routePoints,
+        horizontalPoints,
         false,
         "catmullrom",
         0.35
       );
+
+
+
+    // ============================================================
+    // ALTITUDE PROFILE
+    //
+    // Vertical movement is completely independent from the spline.
+    //
+    // For this diagnostic version:
+    //
+    // start = 18
+    // end   = 0
+    //
+    // It is deliberately almost a single continuous downhill slope.
+    //
+    // smoothstep is used only at the very beginning and end so that
+    // entering/leaving the slope is not abrupt.
+    // ============================================================
+
+    const START_HEIGHT =
+      18;
+
+
+    const END_HEIGHT =
+      0;
+
+
+    function smootherstep(t) {
+
+      t =
+        THREE.MathUtils.clamp(
+          t,
+          0,
+          1
+        );
+
+
+      return (
+        t * t * t *
+        (
+          t *
+          (
+            t * 6 - 15
+          )
+          + 10
+        )
+      );
+
+    }
+
+
+    function getAltitude(t) {
+
+      // Only the first and last 8% are gently blended.
+      // The central 84% is effectively a straight descent.
+
+      const blend =
+        0.08;
+
+
+      let descent;
+
+
+      if (t < blend) {
+
+        const local =
+          t / blend;
+
+
+        const eased =
+          smootherstep(local);
+
+
+        descent =
+          blend *
+          eased;
+
+      }
+
+      else if (t > 1 - blend) {
+
+        const local =
+          (
+            t -
+            (1 - blend)
+          ) /
+          blend;
+
+
+        const eased =
+          smootherstep(local);
+
+
+        descent =
+          (1 - blend) +
+          blend *
+          eased;
+
+      }
+
+      else {
+
+        descent =
+          t;
+
+      }
+
+
+      return THREE.MathUtils.lerp(
+        START_HEIGHT,
+        END_HEIGHT,
+        descent
+      );
+
+    }
+
+
+
+    // ============================================================
+    // ROUTE HELPERS
+    // ============================================================
+
+    function getRoutePoint(t) {
+
+      const point =
+        horizontalRoute.getPointAt(t);
+
+
+      point.y =
+        getAltitude(t);
+
+
+      return point;
+
+    }
+
+
+    function getFlatTangent(t) {
+
+      const tangent =
+        horizontalRoute
+          .getTangentAt(t)
+          .normalize();
+
+
+      tangent.y =
+        0;
+
+
+      return tangent.normalize();
+
+    }
 
 
 
@@ -228,28 +391,18 @@
 
 
       const point =
-        route.getPointAt(t);
+        getRoutePoint(t);
 
 
-      const tangent =
-        route
-          .getTangentAt(t)
-          .normalize();
-
-
-      const flat =
-        new THREE.Vector3(
-          tangent.x,
-          0,
-          tangent.z
-        ).normalize();
+      const flatTangent =
+        getFlatTangent(t);
 
 
       const side =
         new THREE.Vector3(
-          -flat.z,
+          -flatTangent.z,
           0,
-          flat.x
+          flatTangent.x
         );
 
 
@@ -370,28 +523,18 @@
 
 
       const point =
-        route.getPointAt(t);
+        getRoutePoint(t);
 
 
-      const tangent =
-        route
-          .getTangentAt(t)
-          .normalize();
-
-
-      const flat =
-        new THREE.Vector3(
-          tangent.x,
-          0,
-          tangent.z
-        ).normalize();
+      const flatTangent =
+        getFlatTangent(t);
 
 
       const side =
         new THREE.Vector3(
-          -flat.z,
+          -flatTangent.z,
           0,
-          flat.x
+          flatTangent.x
         );
 
 
@@ -424,8 +567,8 @@
 
         marker.rotation.y =
           Math.atan2(
-            flat.x,
-            flat.z
+            flatTangent.x,
+            flatTangent.z
           );
 
 
@@ -438,7 +581,10 @@
 
 
     // ============================================================
-    // TERRAIN
+    // GROUND
+    //
+    // Still only a temporary diagnostic background.
+    // Proper terrain comes later.
     // ============================================================
 
     const ground =
@@ -568,31 +714,21 @@
       performance.now();
 
 
-    const tangent =
-      new THREE.Vector3();
-
-
-    const flatTangent =
-      new THREE.Vector3();
-
-
-    const futureTangent =
-      new THREE.Vector3();
-
-
     const futureFlat =
       new THREE.Vector3();
 
 
 
     // ============================================================
-    // CAMERA CONSTANTS
+    // CAMERA
+    //
+    // Identical philosophy to 1.4.
     //
     // No spring.
-    // No vertical smoothing.
     // No camera shake.
-    // No sine wave.
-    // No turn offset.
+    // No sine.
+    // No vertical smoothing.
+    // No curve offset.
     // ============================================================
 
     const CAMERA_DISTANCE =
@@ -645,13 +781,7 @@
 
 
       // ==========================================================
-      // PROGRESS
-      //
-      // IMPORTANT:
-      //
-      // Pure linear time progression.
-      //
-      // There is NO sine-wave modulation.
+      // PURE LINEAR PROGRESS
       // ==========================================================
 
       const progress =
@@ -662,37 +792,28 @@
         LOOP_DURATION;
 
 
-
-      // ==========================================================
-      // ROUTE
-      // ==========================================================
-
-      const point =
-        route.getPointAt(
-          Math.min(
-            progress,
-            0.9999
-          )
+      const safeProgress =
+        Math.min(
+          progress,
+          0.9999
         );
 
 
-      tangent
-        .copy(
-          route.getTangentAt(
-            Math.min(
-              progress,
-              0.9999
-            )
-          )
-        )
-        .normalize();
+
+      // ==========================================================
+      // ROUTE POSITION
+      // ==========================================================
+
+      const point =
+        getRoutePoint(
+          safeProgress
+        );
 
 
-      flatTangent.set(
-        tangent.x,
-        0,
-        tangent.z
-      ).normalize();
+      const flatTangent =
+        getFlatTangent(
+          safeProgress
+        );
 
 
 
@@ -723,25 +844,16 @@
 
       const futureProgress =
         Math.min(
-          progress + 0.008,
+          safeProgress + 0.008,
           0.9999
         );
 
 
-      futureTangent
-        .copy(
-          route.getTangentAt(
-            futureProgress
-          )
+      futureFlat.copy(
+        getFlatTangent(
+          futureProgress
         )
-        .normalize();
-
-
-      futureFlat.set(
-        futureTangent.x,
-        0,
-        futureTangent.z
-      ).normalize();
+      );
 
 
       const curveAmount =
@@ -761,12 +873,12 @@
 
 
       // ==========================================================
-      // CAMERA
+      // CAMERA POSITION
       //
-      // The camera is rigidly derived from the same route point.
+      // Uses the SAME altitude as the bicycle.
       //
-      // This intentionally removes every independent camera
-      // oscillator / spring / interpolation.
+      // Therefore the bicycle's vertical screen relationship
+      // remains fixed.
       // ==========================================================
 
       camera.position
@@ -784,15 +896,11 @@
 
 
       // ==========================================================
-      // FIXED-PITCH LOOK TARGET
+      // LOOK TARGET
       //
-      // Camera and look target use exactly the same point.y.
+      // Uses the SAME altitude reference.
       //
-      // Therefore:
-      //
-      // camera.y - look.y
-      //
-      // is always constant.
+      // camera.y - lookTarget.y remains constant.
       // ==========================================================
 
       lookTarget
