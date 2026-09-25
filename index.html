@@ -43,9 +43,7 @@
 
       font-size: 11px;
       letter-spacing: 0.14em;
-
       color: rgba(30, 40, 45, 0.45);
-
       pointer-events: none;
     }
   </style>
@@ -62,7 +60,7 @@
 
 <body>
 
-  <div id="label">MOTION PROTOTYPE 01</div>
+  <div id="label">MOTION PROTOTYPE 01.1</div>
 
   <script type="module">
 
@@ -137,9 +135,6 @@
 
     // ============================================================
     // ROUTE
-    //
-    // Y decreases gradually.
-    // This creates the downhill route.
     // ============================================================
 
     const routePoints = [
@@ -194,7 +189,6 @@
     // ============================================================
 
     const roadWidth = 5.5;
-
     const roadSegments = 180;
 
     const roadPositions = [];
@@ -245,9 +239,6 @@
             -roadWidth * 0.5
           );
 
-
-      // Lift road very slightly
-      // to avoid depth fighting later.
 
       left.y += 0.02;
       right.y += 0.02;
@@ -332,9 +323,6 @@
 
     // ============================================================
     // ROAD EDGE MARKERS
-    //
-    // These are intentionally simple.
-    // They make speed and curves easier to perceive.
     // ============================================================
 
     const markerGeometry =
@@ -429,8 +417,6 @@
 
     // ============================================================
     // TERRAIN
-    //
-    // Only a simple ground plane for now.
     // ============================================================
 
     const groundGeometry =
@@ -471,20 +457,11 @@
 
     // ============================================================
     // TEMPORARY BICYCLE MARKER
-    //
-    // Not the final bicycle.
-    //
-    // The arrow-like shape lets us evaluate:
-    // direction
-    // leaning
-    // camera following
     // ============================================================
 
     const bicycle =
       new THREE.Group();
 
-
-    // Main body
 
     const body =
       new THREE.Mesh(
@@ -506,8 +483,6 @@
 
     bicycle.add(body);
 
-
-    // Direction indicator
 
     const nose =
       new THREE.Mesh(
@@ -535,8 +510,6 @@
 
     bicycle.add(nose);
 
-
-    // Rear marker
 
     const rear =
       new THREE.Mesh(
@@ -585,7 +558,7 @@
       new THREE.Vector3();
 
 
-    const previousTangent =
+    const futureTangent =
       new THREE.Vector3();
 
 
@@ -671,38 +644,6 @@
 
 
     // ============================================================
-    // HELPERS
-    // ============================================================
-
-    function smoothstep(
-      edge0,
-      edge1,
-      x
-    ) {
-
-      x =
-        THREE.MathUtils.clamp(
-          (x - edge0) /
-          (edge1 - edge0),
-          0,
-          1
-        );
-
-
-      return (
-        x *
-        x *
-        (
-          3 -
-          2 * x
-        )
-      );
-
-    }
-
-
-
-    // ============================================================
     // ANIMATION
     // ============================================================
 
@@ -734,49 +675,13 @@
       // LOOP PROGRESS
       // ----------------------------------------------------------
 
-      let rawProgress =
+      const rawProgress =
         (
           elapsed %
           LOOP_DURATION
         ) /
         LOOP_DURATION;
 
-
-
-      // Gentle start and end.
-      //
-      // This is only for the prototype.
-      // The final version will use
-      // slope-based speed.
-
-      const startEase =
-        smoothstep(
-          0,
-          0.07,
-          rawProgress
-        );
-
-
-      const endEase =
-        1 -
-        smoothstep(
-          0.91,
-          1,
-          rawProgress
-        );
-
-
-      const speedFactor =
-        Math.max(
-          0.18,
-          startEase *
-          endEase
-        );
-
-
-      // Progress is primarily time based.
-      // A subtle variation prevents
-      // perfectly mechanical motion.
 
       const wave =
         Math.sin(
@@ -834,23 +739,16 @@
       // BICYCLE DIRECTION
       // ----------------------------------------------------------
 
-      const heading =
+      bicycle.rotation.y =
         Math.atan2(
           tangent.x,
           tangent.z
         );
 
 
-      bicycle.rotation.y =
-        heading;
-
-
 
       // ----------------------------------------------------------
-      // LEAN
-      //
-      // Estimate curve amount by comparing
-      // current and slightly future tangent.
+      // BICYCLE LEAN
       // ----------------------------------------------------------
 
       const futureProgress =
@@ -860,7 +758,7 @@
         );
 
 
-      previousTangent
+      futureTangent
         .copy(
           route.getTangentAt(
             futureProgress
@@ -871,9 +769,9 @@
 
       const cross =
         tangent.x *
-        previousTangent.z -
+        futureTangent.z -
         tangent.z *
-        previousTangent.x;
+        futureTangent.x;
 
 
       const targetLean =
@@ -898,6 +796,13 @@
 
       // ----------------------------------------------------------
       // CAMERA POSITION
+      //
+      // IMPORTANT:
+      //
+      // The camera has NO artificial vertical bobbing.
+      //
+      // It only changes height when the route itself changes
+      // elevation.
       // ----------------------------------------------------------
 
       cameraTargetPosition
@@ -913,8 +818,7 @@
 
 
 
-      // Slight horizontal offset caused
-      // by the turn.
+      // Slight horizontal delay during turns.
 
       sideVector
         .crossVectors(
@@ -932,7 +836,7 @@
 
 
 
-      // Camera follows slightly late.
+      // Smooth positional follow.
 
       const cameraFollow =
         1 -
@@ -950,9 +854,6 @@
 
       // ----------------------------------------------------------
       // CAMERA LOOK TARGET
-      //
-      // Look ahead rather than directly
-      // at the bicycle.
       // ----------------------------------------------------------
 
       cameraLookTarget
@@ -983,24 +884,6 @@
       camera.lookAt(
         smoothedLookTarget
       );
-
-
-
-      // ----------------------------------------------------------
-      // VERY SMALL CAMERA MOTION
-      //
-      // Deliberately subtle.
-      // ----------------------------------------------------------
-
-      const motionAmount =
-        speedFactor * 0.018;
-
-
-      camera.position.y +=
-        Math.sin(
-          elapsed * 3.1
-        ) *
-        motionAmount;
 
 
 
