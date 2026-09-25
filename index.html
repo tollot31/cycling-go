@@ -7,7 +7,7 @@
     content="width=device-width, initial-scale=1.0, viewport-fit=cover"
   />
 
-  <title>Cycling Road — Motion Prototype 01.3</title>
+  <title>Cycling Road — Motion Prototype 01.4</title>
 
   <style>
     html,
@@ -33,18 +33,15 @@
       left: 50%;
       bottom: calc(18px + env(safe-area-inset-bottom));
       transform: translateX(-50%);
-
       font-family:
         -apple-system,
         BlinkMacSystemFont,
         "Helvetica Neue",
         Arial,
         sans-serif;
-
       font-size: 11px;
       letter-spacing: 0.14em;
       color: rgba(30, 40, 45, 0.45);
-
       pointer-events: none;
     }
   </style>
@@ -61,7 +58,7 @@
 
 <body>
 
-  <div id="label">MOTION PROTOTYPE 01.3</div>
+  <div id="label">MOTION PROTOTYPE 01.4</div>
 
   <script type="module">
 
@@ -69,31 +66,37 @@
 
 
     // ============================================================
-    // BASIC SETUP
+    // SCENE
     // ============================================================
 
     const scene = new THREE.Scene();
 
-    scene.background = new THREE.Color(0xdfe9ee);
-    scene.fog = new THREE.Fog(
-      0xdfe9ee,
-      35,
-      150
-    );
+    scene.background =
+      new THREE.Color(0xdfe9ee);
+
+    scene.fog =
+      new THREE.Fog(
+        0xdfe9ee,
+        35,
+        150
+      );
 
 
-    const camera = new THREE.PerspectiveCamera(
-      52,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      250
-    );
+    const camera =
+      new THREE.PerspectiveCamera(
+        52,
+        window.innerWidth /
+        window.innerHeight,
+        0.1,
+        250
+      );
 
 
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      powerPreference: "high-performance"
-    });
+    const renderer =
+      new THREE.WebGLRenderer({
+        antialias: true,
+        powerPreference: "high-performance"
+      });
 
 
     renderer.setSize(
@@ -120,36 +123,30 @@
     // LIGHT
     // ============================================================
 
-    const hemisphereLight =
+    scene.add(
       new THREE.HemisphereLight(
         0xffffff,
         0xaeb7a4,
         2.1
-      );
-
-
-    scene.add(
-      hemisphereLight
+      )
     );
 
 
-    const directionalLight =
+    const sun =
       new THREE.DirectionalLight(
         0xffffff,
         1.5
       );
 
 
-    directionalLight.position.set(
+    sun.position.set(
       -10,
       20,
       8
     );
 
 
-    scene.add(
-      directionalLight
-    );
+    scene.add(sun);
 
 
 
@@ -216,12 +213,8 @@
       180;
 
 
-    const roadPositions =
-      [];
-
-
-    const roadIndices =
-      [];
+    const positions = [];
+    const indices = [];
 
 
     for (
@@ -244,8 +237,7 @@
           .normalize();
 
 
-      // Horizontal direction only.
-      const flatTangent =
+      const flat =
         new THREE.Vector3(
           tangent.x,
           0,
@@ -255,10 +247,10 @@
 
       const side =
         new THREE.Vector3(
-          -flatTangent.z,
+          -flat.z,
           0,
-          flatTangent.x
-        ).normalize();
+          flat.x
+        );
 
 
       const left =
@@ -266,7 +258,7 @@
           .clone()
           .addScaledVector(
             side,
-            roadWidth * 0.5
+            roadWidth / 2
           );
 
 
@@ -275,7 +267,7 @@
           .clone()
           .addScaledVector(
             side,
-            -roadWidth * 0.5
+            -roadWidth / 2
           );
 
 
@@ -283,14 +275,11 @@
       right.y += 0.02;
 
 
-      roadPositions.push(
+      positions.push(
         left.x,
         left.y,
-        left.z
-      );
+        left.z,
 
-
-      roadPositions.push(
         right.x,
         right.y,
         right.z
@@ -301,30 +290,15 @@
         i < roadSegments
       ) {
 
-        const a =
-          i * 2;
-
-        const b =
-          a + 1;
-
-        const c =
-          a + 2;
-
-        const d =
-          a + 3;
+        const a = i * 2;
+        const b = a + 1;
+        const c = a + 2;
+        const d = a + 3;
 
 
-        roadIndices.push(
-          a,
-          c,
-          b
-        );
-
-
-        roadIndices.push(
-          c,
-          d,
-          b
+        indices.push(
+          a, c, b,
+          c, d, b
         );
 
       }
@@ -339,14 +313,14 @@
     roadGeometry.setAttribute(
       "position",
       new THREE.Float32BufferAttribute(
-        roadPositions,
+        positions,
         3
       )
     );
 
 
     roadGeometry.setIndex(
-      roadIndices
+      indices
     );
 
 
@@ -363,9 +337,7 @@
       );
 
 
-    scene.add(
-      road
-    );
+    scene.add(road);
 
 
 
@@ -407,7 +379,7 @@
           .normalize();
 
 
-      const flatTangent =
+      const flat =
         new THREE.Vector3(
           tangent.x,
           0,
@@ -417,15 +389,14 @@
 
       const side =
         new THREE.Vector3(
-          -flatTangent.z,
+          -flat.z,
           0,
-          flatTangent.x
-        ).normalize();
+          flat.x
+        );
 
 
       for (
-        const direction
-        of [-1, 1]
+        const direction of [-1, 1]
       ) {
 
         const marker =
@@ -435,38 +406,30 @@
           );
 
 
-        const position =
-          point
-            .clone()
-            .addScaledVector(
-              side,
-              direction *
-              (
-                roadWidth * 0.5 -
-                0.25
-              )
-            );
+        marker.position
+          .copy(point)
+          .addScaledVector(
+            side,
+            direction *
+            (
+              roadWidth / 2 -
+              0.25
+            )
+          );
 
 
-        position.y +=
+        marker.position.y +=
           0.08;
-
-
-        marker.position.copy(
-          position
-        );
 
 
         marker.rotation.y =
           Math.atan2(
-            flatTangent.x,
-            flatTangent.z
+            flat.x,
+            flat.z
           );
 
 
-        scene.add(
-          marker
-        );
+        scene.add(marker);
 
       }
 
@@ -502,9 +465,7 @@
     );
 
 
-    scene.add(
-      ground
-    );
+    scene.add(ground);
 
 
 
@@ -534,9 +495,7 @@
       0.45;
 
 
-    bicycle.add(
-      body
-    );
+    bicycle.add(body);
 
 
     const nose =
@@ -563,9 +522,7 @@
     );
 
 
-    bicycle.add(
-      nose
-    );
+    bicycle.add(nose);
 
 
     const rear =
@@ -588,14 +545,10 @@
     );
 
 
-    bicycle.add(
-      rear
-    );
+    bicycle.add(rear);
 
 
-    scene.add(
-      bicycle
-    );
+    scene.add(bicycle);
 
 
 
@@ -627,24 +580,19 @@
       new THREE.Vector3();
 
 
-    const futureFlatTangent =
-      new THREE.Vector3();
-
-
-    const sideVector =
+    const futureFlat =
       new THREE.Vector3();
 
 
 
     // ============================================================
-    // CAMERA
+    // CAMERA CONSTANTS
     //
-    // Horizon Lock design:
-    //
-    // - Y follows rider height directly.
-    // - Camera and look target use the SAME vertical reference.
-    // - Road slope is NOT used for camera pitch.
-    // - Pitch therefore stays constant.
+    // No spring.
+    // No vertical smoothing.
+    // No camera shake.
+    // No sine wave.
+    // No turn offset.
     // ============================================================
 
     const CAMERA_DISTANCE =
@@ -659,94 +607,12 @@
       5.0;
 
 
-    // Difference between camera height
-    // and look height.
-    //
-    // This determines a fixed downward pitch.
     const LOOK_HEIGHT =
       0.7;
 
 
-    const cameraTarget =
-      new THREE.Vector3();
-
-
     const lookTarget =
       new THREE.Vector3();
-
-
-    const smoothedLook =
-      new THREE.Vector3();
-
-
-
-    // ============================================================
-    // INITIAL POSITION
-    // ============================================================
-
-    const initialPoint =
-      route.getPointAt(0);
-
-
-    const initialRouteTangent =
-      route
-        .getTangentAt(0)
-        .normalize();
-
-
-    const initialFlatTangent =
-      new THREE.Vector3(
-        initialRouteTangent.x,
-        0,
-        initialRouteTangent.z
-      ).normalize();
-
-
-    bicycle.position.copy(
-      initialPoint
-    );
-
-
-    bicycle.position.y +=
-      0.12;
-
-
-    bicycle.rotation.y =
-      Math.atan2(
-        initialFlatTangent.x,
-        initialFlatTangent.z
-      );
-
-
-    camera.position
-      .copy(initialPoint)
-      .addScaledVector(
-        initialFlatTangent,
-        -CAMERA_DISTANCE
-      );
-
-
-    camera.position.y =
-      initialPoint.y +
-      CAMERA_HEIGHT;
-
-
-    smoothedLook
-      .copy(initialPoint)
-      .addScaledVector(
-        initialFlatTangent,
-        LOOK_DISTANCE
-      );
-
-
-    smoothedLook.y =
-      initialPoint.y +
-      LOOK_HEIGHT;
-
-
-    camera.lookAt(
-      smoothedLook
-    );
 
 
 
@@ -778,11 +644,17 @@
 
 
 
-      // ----------------------------------------------------------
-      // ROUTE PROGRESS
-      // ----------------------------------------------------------
+      // ==========================================================
+      // PROGRESS
+      //
+      // IMPORTANT:
+      //
+      // Pure linear time progression.
+      //
+      // There is NO sine-wave modulation.
+      // ==========================================================
 
-      const rawProgress =
+      const progress =
         (
           elapsed %
           LOOP_DURATION
@@ -790,55 +662,31 @@
         LOOP_DURATION;
 
 
-      const wave =
-        Math.sin(
-          rawProgress *
-          Math.PI *
-          2
-        ) *
-        0.004;
 
-
-      const progress =
-        THREE.MathUtils.clamp(
-          rawProgress + wave,
-          0,
-          0.9999
-        );
-
-
-
-      // ----------------------------------------------------------
-      // ROUTE POSITION
-      // ----------------------------------------------------------
+      // ==========================================================
+      // ROUTE
+      // ==========================================================
 
       const point =
         route.getPointAt(
-          progress
+          Math.min(
+            progress,
+            0.9999
+          )
         );
 
 
       tangent
         .copy(
           route.getTangentAt(
-            progress
+            Math.min(
+              progress,
+              0.9999
+            )
           )
         )
         .normalize();
 
-
-
-      // ==========================================================
-      // IMPORTANT:
-      //
-      // Remove vertical direction from the route tangent.
-      //
-      // The camera only knows which way the road turns
-      // LEFT / RIGHT.
-      //
-      // It does not know whether the road is pointing
-      // UP / DOWN.
-      // ==========================================================
 
       flatTangent.set(
         tangent.x,
@@ -848,9 +696,9 @@
 
 
 
-      // ----------------------------------------------------------
-      // BICYCLE POSITION
-      // ----------------------------------------------------------
+      // ==========================================================
+      // BICYCLE
+      // ==========================================================
 
       bicycle.position.copy(
         point
@@ -869,9 +717,9 @@
 
 
 
-      // ----------------------------------------------------------
-      // BICYCLE LEAN
-      // ----------------------------------------------------------
+      // ==========================================================
+      // LEAN
+      // ==========================================================
 
       const futureProgress =
         Math.min(
@@ -889,53 +737,39 @@
         .normalize();
 
 
-      futureFlatTangent.set(
+      futureFlat.set(
         futureTangent.x,
         0,
         futureTangent.z
       ).normalize();
 
 
-      const cross =
+      const curveAmount =
         flatTangent.x *
-        futureFlatTangent.z -
+        futureFlat.z -
         flatTangent.z *
-        futureFlatTangent.x;
+        futureFlat.x;
 
 
-      const targetLean =
+      bicycle.rotation.z =
         THREE.MathUtils.clamp(
-          cross * 8,
+          curveAmount * 8,
           -0.18,
           0.18
         );
 
 
-      bicycle.rotation.z =
-        THREE.MathUtils.lerp(
-          bicycle.rotation.z,
-          targetLean,
-          1 -
-          Math.exp(
-            -delta * 5
-          )
-        );
-
-
 
       // ==========================================================
-      // CAMERA TARGET
+      // CAMERA
       //
-      // X/Z:
-      // Smoothly follows the rider.
+      // The camera is rigidly derived from the same route point.
       //
-      // Y:
-      // Uses rider altitude + constant camera height.
-      //
-      // No delayed vertical tracking.
+      // This intentionally removes every independent camera
+      // oscillator / spring / interpolation.
       // ==========================================================
 
-      cameraTarget
+      camera.position
         .copy(point)
         .addScaledVector(
           flatTangent,
@@ -943,70 +777,22 @@
         );
 
 
-      sideVector.set(
-        -flatTangent.z,
-        0,
-        flatTangent.x
-      );
-
-
-      cameraTarget.addScaledVector(
-        sideVector,
-        targetLean * 1.6
-      );
-
-
-      cameraTarget.y =
+      camera.position.y =
         point.y +
         CAMERA_HEIGHT;
 
 
 
-      // ----------------------------------------------------------
-      // SMOOTH X/Z ONLY
-      // ----------------------------------------------------------
-
-      const horizontalFollow =
-        1 -
-        Math.exp(
-          -delta * 3.0
-        );
-
-
-      camera.position.x =
-        THREE.MathUtils.lerp(
-          camera.position.x,
-          cameraTarget.x,
-          horizontalFollow
-        );
-
-
-      camera.position.z =
-        THREE.MathUtils.lerp(
-          camera.position.z,
-          cameraTarget.z,
-          horizontalFollow
-        );
-
-
-
-      // ----------------------------------------------------------
-      // Y IS DIRECTLY LINKED
-      //
-      // This is intentional.
-      //
-      // No second vertical spring.
-      // No vertical lag.
-      // No vertical oscillation.
-      // ----------------------------------------------------------
-
-      camera.position.y =
-        cameraTarget.y;
-
-
-
       // ==========================================================
       // FIXED-PITCH LOOK TARGET
+      //
+      // Camera and look target use exactly the same point.y.
+      //
+      // Therefore:
+      //
+      // camera.y - look.y
+      //
+      // is always constant.
       // ==========================================================
 
       lookTarget
@@ -1022,45 +808,8 @@
         LOOK_HEIGHT;
 
 
-
-      // Smooth LEFT / RIGHT direction only.
-
-      const lookFollow =
-        1 -
-        Math.exp(
-          -delta * 3.5
-        );
-
-
-      smoothedLook.x =
-        THREE.MathUtils.lerp(
-          smoothedLook.x,
-          lookTarget.x,
-          lookFollow
-        );
-
-
-      smoothedLook.z =
-        THREE.MathUtils.lerp(
-          smoothedLook.z,
-          lookTarget.z,
-          lookFollow
-        );
-
-
-
-      // Y uses exactly the same road altitude reference
-      // as the camera.
-      //
-      // Therefore camera-to-look vertical difference
-      // remains constant.
-
-      smoothedLook.y =
-        lookTarget.y;
-
-
       camera.lookAt(
-        smoothedLook
+        lookTarget
       );
 
 
